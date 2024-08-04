@@ -1,0 +1,12 @@
+logs
+target
+/.bsp
+/.idea
+/.idea_modules
+/.classpath
+/.project
+/.settings
+/RUNNING_PID
+.metals/metals.mv.db
+.metals/metals.lock.db
+.metals/metals.log
