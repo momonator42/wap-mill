@@ -82,21 +82,20 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     val currentPlayerObj = Player((currentPlayer \ "name").as[String], (currentPlayer \ "color").as[String])
     val enemy = twoPlayersList.find(p => p != currentPlayerObj).getOrElse(currentPlayerObj)
 
+    
+    val field: Field = Field((move \ "x").as[Int], (move \ "y").as[Int], (move \ "ring").as[Int], currentPlayerObj.color)
+    val moving: Option[Field] = Some(Field((shift \ "x").as[Int], (shift \ "y").as[Int], (shift \ "ring").as[Int], color = "⚫"))
+
     if (gameState.isInstanceOf[SettingState]) {
-      val field: Field = Field((move \ "x").as[Int], (move \ "y").as[Int], (move \ "ring").as[Int], currentPlayerObj.color)
       gameState.handle(GameEvent.OnSetting, (field, None))
 
     } else if (gameState.isInstanceOf[RemovingState]) {
-      val field: Field = Field((move \ "x").as[Int], (move \ "y").as[Int], (move \ "ring").as[Int], enemy.color)
-      gameState.handle(GameEvent.OnRemoving, (field, None))
+      val enemyField: Field = Field((move \ "x").as[Int], (move \ "y").as[Int], (move \ "ring").as[Int], enemy.color)
+      gameState.handle(GameEvent.OnRemoving, (enemyField, None))
 
     } else if(gameState.isInstanceOf[MovingState]) {
-      val field: Field = Field((move \ "x").as[Int], (move \ "y").as[Int], (move \ "ring").as[Int], currentPlayerObj.color)
-      val moving: Option[Field] = Some(Field((shift \ "x").as[Int], (shift \ "y").as[Int], (shift \ "ring").as[Int], color = "⚫"))
       gameState.handle(GameEvent.OnMoving, (field, moving))
     } else {
-      val field: Field = Field((move \ "x").as[Int], (move \ "y").as[Int], (move \ "ring").as[Int], currentPlayerObj.color)
-      val moving: Option[Field] = Some(Field((shift \ "x").as[Int], (shift \ "y").as[Int], (shift \ "ring").as[Int], color = "⚫"))
       gameState.handle(GameEvent.OnMoving, (field, moving))
     }
   }
