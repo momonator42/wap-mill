@@ -85,14 +85,12 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     
     val field: Field = Field((move \ "x").as[Int], (move \ "y").as[Int], (move \ "ring").as[Int], currentPlayerObj.color)
     val moving: Option[Field] = Some(Field((shift \ "x").as[Int], (shift \ "y").as[Int], (shift \ "ring").as[Int], color = "⚫"))
+    val enemyField: Field = Field((move \ "x").as[Int], (move \ "y").as[Int], (move \ "ring").as[Int], enemy.color)
 
     if (gameState.isInstanceOf[SettingState]) {
       gameState.handle(GameEvent.OnSetting, (field, None))
-
     } else if (gameState.isInstanceOf[RemovingState]) {
-      val enemyField: Field = Field((move \ "x").as[Int], (move \ "y").as[Int], (move \ "ring").as[Int], enemy.color)
       gameState.handle(GameEvent.OnRemoving, (enemyField, None))
-
     } else if(gameState.isInstanceOf[MovingState]) {
       gameState.handle(GameEvent.OnMoving, (field, moving))
     } else {
