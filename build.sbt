@@ -18,6 +18,13 @@ libraryDependencies ++= Seq(
       "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
 )
 
+
+assemblyMergeStrategy in assembly := {
+      case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+      case x => MergeStrategy.first
+}
+
+
 // Adds additional packages into Twirl
 //TwirlKeys.templateImports += "-.controllers._"
 

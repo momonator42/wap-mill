@@ -46,17 +46,22 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
         try {
           (body \ "Move").asOpt[JsValue] match
             case Some(move) => {
-              (body \ "Shift").asOpt[JsValue] match
-                case Some(shift) => {
-                  val gameState: GameState = GameState.fromJson(state)
-                  val currentPlayer: JsValue = (state \ "game" \ "currentPlayer").as[JsValue]
-                  val twoPlayers = (state \ "game" \ "players").as[JsArray]
-                  val newState: Try[GameState] = doMove(gameState, move, shift,currentPlayer, twoPlayers)
-                  newState match
-                    case Success(value) => Ok(doTurn(value, twoPlayers).toJson)
-                    case Failure(ex) => BadRequest("Zug konnte nicht geführt werden")
-                }
-                case None => BadRequest("Shift not available")
+                val gameState: GameState = GameState.fromJson(state)
+                val currentPlayer: JsValue = (state \ "game" \ "currentPlayer").as[JsValue]
+                val twoPlayers = (state \ "game" \ "players").as[JsArray]
+                (body \ "Shift").asOpt[JsValue] match
+                  case Some(shift) => {
+                    val newState: Try[GameState] = doMove(gameState, move, Some(shift), currentPlayer, twoPlayers)
+                      newState match
+                        case Success(value) => Ok(doTurn(value, twoPlayers).toJson)
+                        case Failure(ex) => BadRequest("Zug konnte nicht geführt werden")
+                  }
+                  case None => {
+                    val newState: Try[GameState] = doMove(gameState, move, None, currentPlayer, twoPlayers)
+                      newState match
+                        case Success(value) => Ok(doTurn(value, twoPlayers).toJson)
+                        case Failure(ex) => BadRequest("Zug konnte nicht geführt werden")
+                  }
             }
             case None => BadRequest("Move not available")
 
@@ -71,7 +76,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
 
   }
 
-  def doMove(gameState: GameState, move: JsValue, shift: JsValue, currentPlayer: JsValue, twoPlayers: JsArray): Try[GameState] = {
+  def doMove(gameState: GameState, move: JsValue, shift: Option[JsValue], currentPlayer: JsValue, twoPlayers: JsArray): Try[GameState] = {
     val firstPlayer: JsValue = twoPlayers(0)
     val secondPlayer: JsValue = twoPlayers(1)
     val firstPlayerObj: Player = Player((firstPlayer \ "name").as[String], (firstPlayer \ "color").as[String])
@@ -84,7 +89,12 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
 
     
     val field: Field = Field((move \ "x").as[Int], (move \ "y").as[Int], (move \ "ring").as[Int], currentPlayerObj.color)
-    val moving: Option[Field] = Some(Field((shift \ "x").as[Int], (shift \ "y").as[Int], (shift \ "ring").as[Int], color = "⚫"))
+
+    val moving: Option[Field] = shift match
+      case Some(value) => 
+        Some(Field((value \ "x").as[Int], (value \ "y").as[Int], (value \ "ring").as[Int], color = "⚫"))
+      case None => None
+    
     val enemyField: Field = Field((move \ "x").as[Int], (move \ "y").as[Int], (move \ "ring").as[Int], enemy.color)
 
     if (gameState.isInstanceOf[SettingState]) {
