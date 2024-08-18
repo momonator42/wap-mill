@@ -100,12 +100,25 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     if (gameState.isInstanceOf[SettingState]) {
       gameState.handle(GameEvent.OnSetting, (field, None))
     } else if (gameState.isInstanceOf[RemovingState]) {
-      gameState.handle(GameEvent.OnRemoving, (enemyField, None))
+      if (findFieldColor(enemyField.x, enemyField.y, enemyField.ring, gameState) != "⚫") {
+        gameState.handle(GameEvent.OnRemoving, (enemyField, None))
+      } else {
+        return Failure(
+          IllegalArgumentException(
+            "InvalidUnsetField"
+          )
+        )
+      }
     } else if(gameState.isInstanceOf[MovingState]) {
       gameState.handle(GameEvent.OnMoving, (field, moving))
     } else {
       gameState.handle(GameEvent.OnMoving, (field, moving))
     }
+  }
+
+  def findFieldColor(x: Int, y: Int, ring: Int, gameState: GameState): String = {
+    val fields = gameState.game.board.fields
+    fields.find(f => f.x == x && f.y == y && f.ring == ring).map(_.color).getOrElse("⚫")
   }
 
   def doTurn(turn: GameState, twoPlayersJsValues: JsArray): GameState = {
