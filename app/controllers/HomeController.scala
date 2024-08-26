@@ -110,9 +110,17 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
         )
       }
     } else if(gameState.isInstanceOf[MovingState]) {
-      gameState.handle(GameEvent.OnMoving, (field, moving))
+      if (findFieldColor(enemyField.x, enemyField.y, enemyField.ring, gameState) != "⚫") {
+        gameState.handle(GameEvent.OnMoving, (field, moving))
+      } else {
+        return Failure(
+          IllegalArgumentException(
+            "InvalidMoveField"
+          )
+        )
+      }
     } else {
-      gameState.handle(GameEvent.OnMoving, (field, moving))
+      gameState.handle(GameEvent.OnFlying, (field, moving))
     }
   }
 
