@@ -110,7 +110,8 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
         )
       }
     } else if(gameState.isInstanceOf[MovingState]) {
-      if (findFieldColor(enemyField.x, enemyField.y, enemyField.ring, gameState) != "⚫") {
+      if (findFieldColor(enemyField.x, enemyField.y, enemyField.ring, gameState) != "⚫"
+          && findFieldColor(enemyField.x, enemyField.y, enemyField.ring, gameState) != enemy.color) {
         gameState.handle(GameEvent.OnMoving, (field, moving))
       } else {
         return Failure(
@@ -120,7 +121,16 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
         )
       }
     } else {
-      gameState.handle(GameEvent.OnFlying, (field, moving))
+      if (findFieldColor(enemyField.x, enemyField.y, enemyField.ring, gameState) != "⚫"
+          && findFieldColor(enemyField.x, enemyField.y, enemyField.ring, gameState) != enemy.color) {
+        gameState.handle(GameEvent.OnFlying, (field, moving))
+      } else {
+        return Failure(
+          IllegalArgumentException(
+            "InvalidFlyingField"
+          )
+        )
+      }
     }
   }
 
