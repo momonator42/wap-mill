@@ -53,13 +53,21 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
                   case Some(shift) => {
                     val newState: Try[GameState] = doMove(gameState, move, Some(shift), currentPlayer, twoPlayers)
                       newState match
-                        case Success(value) => Ok(doTurn(value, twoPlayers).toJson)
+                        case Success(value) => 
+                          doTurn(value, twoPlayers) match {
+                            case Some(updatedState) => Ok(updatedState.toJson)
+                            case None => Ok(Json.obj("message" -> "Das Spiel ist beendet."))
+                          }
                         case Failure(ex) => BadRequest("Zug konnte nicht geführt werden")
                   }
                   case None => {
                     val newState: Try[GameState] = doMove(gameState, move, None, currentPlayer, twoPlayers)
                       newState match
-                        case Success(value) => Ok(doTurn(value, twoPlayers).toJson)
+                        case Success(value) => 
+                          doTurn(value, twoPlayers) match {
+                            case Some(updatedState) => Ok(updatedState.toJson)
+                            case None => Ok(Json.obj("message" -> "Das Spiel ist beendet."))
+                          }
                         case Failure(ex) => BadRequest("Zug konnte nicht geführt werden")
                   }
             }
@@ -139,7 +147,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     fields.find(f => f.x == x && f.y == y && f.ring == ring).map(_.color).getOrElse("⚫")
   }
 
-  def doTurn(turn: GameState, twoPlayersJsValues: JsArray): GameState = {
+  def doTurn(turn: GameState, twoPlayersJsValues: JsArray): Option[GameState] = {
     val winStrategy = WinStrategy.classicStrategy
     var currentGame: Option[GameInterface] = None
     var gameState: Option[GameState] = None
@@ -193,9 +201,10 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
       }
     }
     if (winStrategy(currentGame.get)) {
-      Ok(s"Glückwunsch, ${currentGame.get.currentPlayer} gewonnen")
+      None
+    } else {
+      gameState
     }
-    gameState.get
   }
   
 }
