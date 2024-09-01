@@ -20,6 +20,8 @@ import model.WinStrategy
 
 import scala.util.{Try, Success, Failure}
 
+import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim}
+
 
 
 /**
@@ -38,50 +40,64 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
    */
 
   def action(): Action[JsValue] = Action(parse.json) { implicit request: Request[JsValue] =>
-    val body: JsValue = request.body
+    val maybeToken = request.headers.get("Authorization").flatMap { header =>
+      header.split(" ").lastOption
+    }
 
-    
-    (body \ "State").asOpt[JsValue] match 
-      case Some(state) => {
-        try {
-          (body \ "Move").asOpt[JsValue] match
-            case Some(move) => {
-                val gameState: GameState = GameState.fromJson(state)
-                val currentPlayer: JsValue = (state \ "game" \ "currentPlayer").as[JsValue]
-                val twoPlayers = (state \ "game" \ "players").as[JsArray]
-                (body \ "Shift").asOpt[JsValue] match
-                  case Some(shift) => {
-                    val newState: Try[GameState] = doMove(gameState, move, Some(shift), currentPlayer, twoPlayers)
-                      newState match
-                        case Success(value) => 
-                          doTurn(value, twoPlayers) match {
-                            case Some(updatedState) => Ok(updatedState.toJson)
-                            case None => Ok(Json.obj("message" -> "Das Spiel ist beendet."))
-                          }
-                        case Failure(ex) => BadRequest("Zug konnte nicht geführt werden")
+    maybeToken match {
+      case Some(token) if validateJWT(token) => {
+          val body: JsValue = request.body
+          (body \ "State").asOpt[JsValue] match 
+            case Some(state) => {
+              try {
+                (body \ "Move").asOpt[JsValue] match
+                  case Some(move) => {
+                      val gameState: GameState = GameState.fromJson(state)
+                      val currentPlayer: JsValue = (state \ "game" \ "currentPlayer").as[JsValue]
+                      val twoPlayers = (state \ "game" \ "players").as[JsArray]
+                      (body \ "Shift").asOpt[JsValue] match
+                        case Some(shift) => {
+                          val newState: Try[GameState] = doMove(gameState, move, Some(shift), currentPlayer, twoPlayers)
+                            newState match
+                              case Success(value) => 
+                                doTurn(value, twoPlayers) match {
+                                  case Some(updatedState) => Ok(updatedState.toJson)
+                                  case None => Ok(Json.obj("message" -> "Das Spiel ist beendet."))
+                                }
+                              case Failure(ex) => BadRequest("Zug konnte nicht geführt werden")
+                        }
+                        case None => {
+                          val newState: Try[GameState] = doMove(gameState, move, None, currentPlayer, twoPlayers)
+                            newState match
+                              case Success(value) => 
+                                doTurn(value, twoPlayers) match {
+                                  case Some(updatedState) => Ok(updatedState.toJson)
+                                  case None => Ok(Json.obj("message" -> "Das Spiel ist beendet."))
+                                }
+                              case Failure(ex) => BadRequest("Zug konnte nicht geführt werden")
+                        }
                   }
-                  case None => {
-                    val newState: Try[GameState] = doMove(gameState, move, None, currentPlayer, twoPlayers)
-                      newState match
-                        case Success(value) => 
-                          doTurn(value, twoPlayers) match {
-                            case Some(updatedState) => Ok(updatedState.toJson)
-                            case None => Ok(Json.obj("message" -> "Das Spiel ist beendet."))
-                          }
-                        case Failure(ex) => BadRequest("Zug konnte nicht geführt werden")
-                  }
+                  case None => BadRequest("Move not available")
+              } catch {
+                case ex: Exception => {
+                  println(ex)
+                  InternalServerError("Konnte nicht verarbeitet werden")
+                }
+              }
             }
-            case None => BadRequest("Move not available")
-
-        } catch {
-          case ex: Exception => {
-            println(ex)
-            InternalServerError("Konnte nicht verarbeitet werden")
-          }
-        }
+            case None => BadRequest("State not available")
       }
-      case None => BadRequest("State not available")
+      case _ => Unauthorized("Ungültiges oder fehlendes Authorization-Token")
+    }
+  }
 
+  def validateJWT(token: String): Boolean = {
+    val secret = sys.env.getOrElse("JWT_SECRET", "password")
+    try {
+      Jwt.decode(token, secret, Seq(JwtAlgorithm.HS256)).isSuccess
+    } catch {
+      case _: Exception => false
+    }
   }
 
   def doMove(gameState: GameState, move: JsValue, shift: Option[JsValue], currentPlayer: JsValue, twoPlayers: JsArray): Try[GameState] = {

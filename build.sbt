@@ -19,7 +19,8 @@ libraryDependencies ++= Seq(
       "com.google.inject" % "guice" % "5.1.0",
       ("net.codingwell" %% "scala-guice" % "6.0.0").cross(CrossVersion.for3Use2_13),
       "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
-      "ch.qos.logback" % "logback-classic" % "1.3.5"
+      "ch.qos.logback" % "logback-classic" % "1.3.5",
+      "com.github.jwt-scala" %% "jwt-play" % "10.0.1"
 )
 
 
