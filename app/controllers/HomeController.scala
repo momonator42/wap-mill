@@ -40,7 +40,8 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
    */
 
   def index(): Action[AnyContent] = Action { implicit request: Request[AnyContent] =>
-    Ok("Welcome to the WAP-Mill Game! this is the REST API microservice for the webserver")
+    Ok("Welcome to the WAP-Mill Game! " +
+      "This is the REST API microservice for the webserver")
   }
 
   def action(): Action[JsValue] = Action(parse.json) { implicit request: Request[JsValue] =>
