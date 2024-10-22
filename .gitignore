@@ -10,3 +10,6 @@ target
 .metals/metals.mv.db
 .metals/metals.lock.db
 .metals/metals.log
+.g8
+.metals
+.vscode
